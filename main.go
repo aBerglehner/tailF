@@ -1,10 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"os"
+	"strings"
+	"time"
 )
 
 const MaxReadLineCount int16 = 32000
@@ -28,13 +33,49 @@ func main() {
 	fmt.Println("")
 
 	readLineCount := int16(min(*n, int(MaxReadLineCount)))
-	str := run(fileName, readLineCount)
-	fmt.Println(str)
+
+	initSearchCh := make(chan string)
+	go func() {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter search term (empty to clear): ")
+		for {
+			text, _ := reader.ReadString('\n')
+			text = strings.TrimSpace(text)
+			initSearchCh <- text
+			fmt.Println("Search term updated to:", text)
+		}
+	}()
+
+	for {
+		select {
+		case searchTerm := <-initSearchCh:
+			fmt.Println(searchTerm)
+			str := run(fileName, readLineCount, searchTerm)
+			fmt.Printf("%s", str)
+			// TODO: refactor below
+			f, err := os.Open(fileName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer f.Close()
+			tailCh := make(chan string)
+			go tailF(f, fileName, tailCh)
+
+			for {
+				select {
+				case s := <-tailCh:
+					fmt.Printf("%s", s)
+				case searchTerm := <-initSearchCh:
+					str := run(fileName, readLineCount, searchTerm)
+					fmt.Printf("%s", str)
+				}
+			}
+		}
+	}
 }
 
-func run(fileName string, readLineCount int16) string {
-	// str, err := ReadLastNLines(fileName, readLineCount)
-	str, err := SearchLastNLines(fileName, readLineCount)
+func run(fileName string, readLineCount int16, searchTerm string) string {
+	str, err := SearchLastNLines(fileName, readLineCount, searchTerm)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err.Error()
@@ -42,51 +83,7 @@ func run(fileName string, readLineCount int16) string {
 	return str
 }
 
-func ReadLastNLines(fileName string, readLineCount int16) (string, error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	const chunkSize = 8096
-	// const chunkSize = 16192
-	// const chunkSize = 32384
-	stat, _ := f.Stat()
-	size := stat.Size()
-
-	var buf []byte
-	var readSize int64
-	var newlineCnt int16
-
-	for size > 0 && newlineCnt <= readLineCount {
-		readSize = min(size, chunkSize)
-		size -= readSize
-
-		chunk := make([]byte, readSize)
-		_, err := f.ReadAt(chunk, size)
-		if err != nil {
-			return "", err
-		}
-
-		// print only as much lines as given readLineCount-> -n flag
-		for i := len(chunk) - 1; i >= 0; i-- {
-			if chunk[i] == '\n' {
-				newlineCnt++
-				if newlineCnt > readLineCount {
-					buf = append(buf, chunk[i+1:]...)
-					return string(buf), nil
-				}
-			}
-		}
-		buf = append(buf, chunk...)
-	}
-
-	return string(buf), nil
-}
-
-func SearchLastNLines(fileName string, readLineCount int16) (string, error) {
-	search := "the"
+func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -115,8 +112,7 @@ func SearchLastNLines(fileName string, readLineCount int16) (string, error) {
 			return "", err
 		}
 
-		// TODO: look at file listener and make it into 1
-		if bytes.Contains(chunk, searchTerm) {
+		if len(searchTerm) != 0 && bytes.Contains(chunk, searchTerm) {
 			highlightedSearch := append(append(highlightColor, searchTerm...), resetColor...)
 			highlighted := bytes.ReplaceAll(
 				chunk,
@@ -141,4 +137,39 @@ func SearchLastNLines(fileName string, readLineCount int16) (string, error) {
 	}
 
 	return string(buf), nil
+}
+
+func tailF(f *os.File, path string, tailCh chan<- string) {
+	offset, err := f.Seek(0, io.SeekEnd)
+	if err != nil {
+		log.Fatal(err)
+	}
+	reader := bufio.NewReader(f)
+	for {
+		// Try reading a line
+		line, err := reader.ReadString('\n')
+		if err == nil {
+			tailCh <- line
+			offset += int64(len(line))
+			continue
+		}
+
+		// If nothing new: sleep and check again
+		time.Sleep(50 * time.Millisecond)
+
+		// Check if file grew
+		stat, err := os.Stat(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// // If file was truncated (e.g., rotated), reset
+		if stat.Size() < offset {
+			f.Close()
+			f, _ = os.Open(path)
+			reader = bufio.NewReader(f)
+			offset = 0
+			continue
+		}
+	}
 }
