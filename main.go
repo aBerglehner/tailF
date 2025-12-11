@@ -10,7 +10,7 @@ const MaxReadLineCount int16 = 32000
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: go run main.go <name>")
+		fmt.Println("file argument missing! sample: main.go test.txt")
 		return
 	}
 	fileName := os.Args[len(os.Args)-1]
