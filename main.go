@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
 )
 
 const MaxReadLineCount int16 = 32000
+
+var (
+	highlightColor = []byte("\033[31m")
+	resetColor     = []byte("\033[0m")
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -27,7 +33,8 @@ func main() {
 }
 
 func run(fileName string, readLineCount int16) string {
-	str, err := ReadLastNLines(fileName, readLineCount)
+	// str, err := ReadLastNLines(fileName, readLineCount)
+	str, err := SearchLastNLines(fileName, readLineCount)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err.Error()
@@ -72,6 +79,64 @@ func ReadLastNLines(fileName string, readLineCount int16) (string, error) {
 				}
 			}
 		}
+		buf = append(buf, chunk...)
+	}
+
+	return string(buf), nil
+}
+
+func SearchLastNLines(fileName string, readLineCount int16) (string, error) {
+	search := "the"
+	searchTerm := []byte(search)
+	f, err := os.Open(fileName)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	const chunkSize = 1024
+	// const chunkSize = 8096
+	// const chunkSize = 16192
+	// const chunkSize = 32384
+	stat, _ := f.Stat()
+	size := stat.Size()
+
+	var buf []byte
+	var readSize int64
+	var newlineCnt int16
+
+	for size > 0 && newlineCnt <= readLineCount {
+		readSize = min(size, chunkSize)
+		size -= readSize
+
+		chunk := make([]byte, readSize)
+		_, err := f.ReadAt(chunk, size)
+		if err != nil {
+			return "", err
+		}
+
+		// TODO: look at file listener and make it into 1
+		if bytes.Contains(chunk, searchTerm) {
+			highlightedSearch := append(append(highlightColor, searchTerm...), resetColor...)
+			highlighted := bytes.ReplaceAll(
+				chunk,
+				searchTerm,
+				highlightedSearch,
+			)
+			chunk = append(chunk, highlighted...)
+		}
+
+		// print only as much lines as given readLineCount-> -n flag
+		for i := len(chunk) - 1; i >= 0; i-- {
+			if chunk[i] == '\n' {
+				newlineCnt++
+				if newlineCnt > readLineCount {
+					buf = append(buf, chunk[i+1:]...)
+					return string(buf), nil
+				}
+			}
+		}
+
 		buf = append(buf, chunk...)
 	}
 
