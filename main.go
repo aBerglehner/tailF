@@ -6,43 +6,51 @@ import (
 	"os"
 )
 
+const MaxReadLineCount int16 = 32000
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("usage: go run main.go <name>")
 		return
 	}
-	// TODO: check if file exist -> if not return
 	fileName := os.Args[len(os.Args)-1]
-	fmt.Printf("last: %v\n", fileName)
 	n := flag.Int("n", 10, "Number of lines")
-
 	flag.Parse()
+
+	fmt.Printf("fileName: %v\n", fileName)
 	fmt.Printf("n: %v\n", *n)
 	fmt.Println("")
-	str, err := ReadLastNLines(fileName, *n)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return
-	}
-	fmt.Printf("str: \n%v\n", str)
+
+	readLineCount := int16(min(*n, int(MaxReadLineCount)))
+	str := run(fileName, readLineCount)
+	fmt.Println(str)
 }
 
-func ReadLastNLines(fileName string, readLineCount int) (string, error) {
-	fmt.Printf("fileName: %v\n", fileName)
+func run(fileName string, readLineCount int16) string {
+	str, err := ReadLastNLines(fileName, readLineCount)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return err.Error()
+	}
+	return str
+}
+
+func ReadLastNLines(fileName string, readLineCount int16) (string, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
-	const chunkSize = 1024
+	const chunkSize = 8096
+	// const chunkSize = 16192
+	// const chunkSize = 32384
 	stat, _ := f.Stat()
 	size := stat.Size()
-	fmt.Printf("size: %v\n", size)
 
 	var buf []byte
 	var readSize int64
-	var newlineCnt int
+	var newlineCnt int16
 
 	for size > 0 && newlineCnt <= readLineCount {
 		readSize = min(size, chunkSize)
@@ -60,7 +68,6 @@ func ReadLastNLines(fileName string, readLineCount int) (string, error) {
 				newlineCnt++
 				if newlineCnt > readLineCount {
 					buf = append(buf, chunk[i+1:]...)
-					fmt.Printf("\"in first return\": %v\n", "in first return")
 					return string(buf), nil
 				}
 			}
@@ -68,6 +75,5 @@ func ReadLastNLines(fileName string, readLineCount int) (string, error) {
 		buf = append(buf, chunk...)
 	}
 
-	fmt.Printf("\"last return\": %v\n", "last return")
 	return string(buf), nil
 }
