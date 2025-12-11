@@ -14,7 +14,7 @@ func main() {
 		return
 	}
 	fileName := os.Args[len(os.Args)-1]
-	n := flag.Int("n", 10, "Number of lines")
+	n := flag.Int("n", 100, "Number of lines")
 	flag.Parse()
 
 	fmt.Printf("fileName: %v\n", fileName)
