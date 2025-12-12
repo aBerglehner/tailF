@@ -14,7 +14,7 @@ func BenchmarkFullSize(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount)
+		run(FileName, MaxReadLineCount, "test")
 	}
 
 	b.StopTimer()
@@ -40,7 +40,7 @@ func BenchmarkQuaterOfSize(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount/4)
+		run(FileName, MaxReadLineCount/4, "test")
 	}
 
 	b.StopTimer()
@@ -68,7 +68,7 @@ func Benchmark1000LinesSyslog(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(fileName, readLineCount)
+		run(fileName, readLineCount, "test")
 	}
 
 	b.StopTimer()
