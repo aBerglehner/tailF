@@ -146,7 +146,7 @@ func tailF(f *os.File, path string, tailCh chan<- string) {
 		}
 
 		// If nothing new: sleep and check again
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(3000 * time.Millisecond)
 
 		// Check if file grew
 		stat, err := os.Stat(path)
