@@ -46,30 +46,21 @@ func main() {
 		}
 	}()
 
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	tailCh := make(chan string)
+	go tailF(f, fileName, tailCh)
+
 	for {
 		select {
+		case s := <-tailCh:
+			fmt.Printf("%s", s)
 		case searchTerm := <-initSearchCh:
-			fmt.Println(searchTerm)
 			str := run(fileName, readLineCount, searchTerm)
 			fmt.Printf("%s", str)
-			// TODO: refactor below
-			f, err := os.Open(fileName)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer f.Close()
-			tailCh := make(chan string)
-			go tailF(f, fileName, tailCh)
-
-			for {
-				select {
-				case s := <-tailCh:
-					fmt.Printf("%s", s)
-				case searchTerm := <-initSearchCh:
-					str := run(fileName, readLineCount, searchTerm)
-					fmt.Printf("%s", str)
-				}
-			}
 		}
 	}
 }
