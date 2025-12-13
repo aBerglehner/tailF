@@ -24,3 +24,14 @@ later:
 * able to add n lines override via argument -> that overrides default
 -change search color via argument
 
+
+how to parallel:
+    1:
+        -set bigChunk (overall one) to ~512k
+        -divide overall size / bigChunk
+        -go routine knows offset
+            -it need to return to channel -> struct{offset,strBuilder}
+        -loop through buffered channel
+            -save it into []struct{offset,strBuilder}
+            -order it with offset (so you get the right string ordering)
+            -build the string
