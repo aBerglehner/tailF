@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -79,65 +80,85 @@ func run(fileName string, readLineCount int16, searchTerm string) string {
 // PERF:split it up to multiple go routines
 func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
+
 	f, err := os.Open(fileName)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
+	stat, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+	size := stat.Size()
+	if size == 0 {
+		return "", nil
+	}
+
+	data, err := syscall.Mmap(
+		int(f.Fd()),
+		0,
+		int(size),
+		syscall.PROT_READ,
+		syscall.MAP_SHARED,
+	)
+	if err != nil {
+		return "", err
+	}
+	defer syscall.Munmap(data)
+
+	var buf []byte
+	var newlineCnt int16
+
+	highlightedSearch := append(
+		append([]byte{}, highlightColor...),
+		append(searchTerm, resetColor...)...,
+	)
+
+	// walk backwards in chunks (logical chunks, no copying)
 	// const chunkSize = 1024
 	// const chunkSize = 4096
 	// const chunkSize = 8192
-	const chunkSize = 16384
-	// const chunkSize = 20480
+	// const chunkSize = 16384
+	const chunkSize = 20480
 	// const chunkSize = 24576
-	stat, _ := f.Stat()
-	size := stat.Size()
 
-	var buf []byte
-	var readSize int64
-	var newlineCnt int16
+	for end := len(data); end > 0 && newlineCnt <= readLineCount; {
+		start := max(end-chunkSize, 0)
 
-	highlightedSearch := append(append(highlightColor, searchTerm...), resetColor...)
-	for size > 0 && newlineCnt <= readLineCount {
-		readSize = min(size, chunkSize)
-		size -= readSize
+		chunk := data[start:end] // ZERO COPY
 
-		chunk := make([]byte, readSize)
-		_, err := f.ReadAt(chunk, size)
-		if err != nil {
-			return "", err
-		}
-
+		// optional highlight (this allocates only if match exists)
 		if len(searchTerm) != 0 && bytes.Contains(chunk, searchTerm) {
-			highlighted := bytes.ReplaceAll(
+			chunk = bytes.ReplaceAll(
 				chunk,
 				searchTerm,
 				highlightedSearch,
 			)
-			chunk = highlighted
 		}
 
 		// will use bytes.Count as it will use simd
-		// newlineCnt += int16(bytes.Count(chunk, []byte{'\n'}))
-		// if newlineCnt > readLineCount {
-		// 	// buf = append(buf, chunk[i+1:]...)
-		// 	buf = append(buf, chunk...)
-		// 	return string(buf), nil
-		// }
-
-		// // print only as much lines as given readLineCount-> -n flag
-		for i := len(chunk) - 1; i >= 0; i-- {
-			if chunk[i] == '\n' {
-				newlineCnt++
-				if newlineCnt > readLineCount {
-					buf = append(buf, chunk[i+1:]...)
-					return string(buf), nil
-				}
-			}
+		newlineCnt += int16(bytes.Count(chunk, []byte{'\n'}))
+		if newlineCnt > readLineCount {
+			// buf = append(buf, chunk[i+1:]...)
+			buf = append(buf, chunk...)
+			return string(buf), nil
 		}
 
+		// print only as much lines as given readLineCount-> -n flag
+		// for i := len(chunk) - 1; i >= 0; i-- {
+		// 	if chunk[i] == '\n' {
+		// 		newlineCnt++
+		// 		if newlineCnt > readLineCount {
+		// 			buf = append(buf, chunk[i+1:]...)
+		// 			return string(buf), nil
+		// 		}
+		// 	}
+		// }
+
 		buf = append(buf, chunk...)
+		end = start
 	}
 
 	return string(buf), nil
