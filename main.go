@@ -42,7 +42,6 @@ func main() {
 			text, _ := reader.ReadString('\n')
 			text = strings.TrimSpace(text)
 			initSearchCh <- text
-			fmt.Println("Search term updated to:", text)
 		}
 	}()
 
@@ -59,6 +58,9 @@ func main() {
 		case s := <-tailCh:
 			fmt.Printf("%s", s)
 		case searchTerm := <-initSearchCh:
+			// \033[H  -> moves the cursor to top-left
+			// \033[2J -> clears the screen
+			fmt.Print("\033[H\033[2J")
 			str := run(fileName, readLineCount, searchTerm)
 			fmt.Printf("%s", str)
 		}
@@ -74,6 +76,8 @@ func run(fileName string, readLineCount int16, searchTerm string) string {
 	return str
 }
 
+// TODO: check the search in bigger ones not all is highlighted???
+// PERF:split it up to multiple go routines
 func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 	f, err := os.Open(fileName)
@@ -110,7 +114,7 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 				searchTerm,
 				highlightedSearch,
 			)
-			chunk = append(chunk, highlighted...)
+			chunk = highlighted
 		}
 
 		// print only as much lines as given readLineCount-> -n flag
