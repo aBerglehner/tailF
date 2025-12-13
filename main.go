@@ -76,7 +76,6 @@ func run(fileName string, readLineCount int16, searchTerm string) string {
 	return str
 }
 
-// TODO: check the search in bigger ones not all is highlighted???
 // PERF:split it up to multiple go routines
 func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
@@ -86,9 +85,9 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 	}
 	defer f.Close()
 
-	const chunkSize = 1024
+	// const chunkSize = 1024
 	// const chunkSize = 8096
-	// const chunkSize = 16192
+	const chunkSize = 16192
 	// const chunkSize = 32384
 	stat, _ := f.Stat()
 	size := stat.Size()
@@ -150,6 +149,7 @@ func tailF(f *os.File, path string, tailCh chan<- string) {
 		}
 
 		// If nothing new: sleep and check again
+		// TODO: try with lock
 		time.Sleep(3000 * time.Millisecond)
 
 		// Check if file grew
