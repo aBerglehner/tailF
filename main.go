@@ -86,10 +86,11 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 	defer f.Close()
 
 	// const chunkSize = 1024
-	// const chunkSize = 8096
-	// const chunkSize = 16192
-	const chunkSize = 20288
-	// const chunkSize = 24288
+	// const chunkSize = 4096
+	// const chunkSize = 8192
+	const chunkSize = 16384
+	// const chunkSize = 20480
+	// const chunkSize = 24576
 	stat, _ := f.Stat()
 	size := stat.Size()
 
@@ -97,6 +98,7 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 	var readSize int64
 	var newlineCnt int16
 
+	highlightedSearch := append(append(highlightColor, searchTerm...), resetColor...)
 	for size > 0 && newlineCnt <= readLineCount {
 		readSize = min(size, chunkSize)
 		size -= readSize
@@ -108,7 +110,6 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 		}
 
 		if len(searchTerm) != 0 && bytes.Contains(chunk, searchTerm) {
-			highlightedSearch := append(append(highlightColor, searchTerm...), resetColor...)
 			highlighted := bytes.ReplaceAll(
 				chunk,
 				searchTerm,
@@ -117,7 +118,15 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 			chunk = highlighted
 		}
 
-		// print only as much lines as given readLineCount-> -n flag
+		// will use bytes.Count as it will use simd
+		// newlineCnt += int16(bytes.Count(chunk, []byte{'\n'}))
+		// if newlineCnt > readLineCount {
+		// 	// buf = append(buf, chunk[i+1:]...)
+		// 	buf = append(buf, chunk...)
+		// 	return string(buf), nil
+		// }
+
+		// // print only as much lines as given readLineCount-> -n flag
 		for i := len(chunk) - 1; i >= 0; i-- {
 			if chunk[i] == '\n' {
 				newlineCnt++
