@@ -87,8 +87,9 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 
 	// const chunkSize = 1024
 	// const chunkSize = 8096
-	const chunkSize = 16192
-	// const chunkSize = 32384
+	// const chunkSize = 16192
+	const chunkSize = 20288
+	// const chunkSize = 24288
 	stat, _ := f.Stat()
 	size := stat.Size()
 
