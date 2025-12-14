@@ -96,13 +96,7 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 		return "", nil
 	}
 
-	data, err := syscall.Mmap(
-		int(f.Fd()),
-		0,
-		int(size),
-		syscall.PROT_READ,
-		syscall.MAP_SHARED,
-	)
+	data, err := syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
 		return "", err
 	}
@@ -127,9 +121,8 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 	for end := len(data); end > 0 && newlineCnt <= readLineCount; {
 		start := max(end-chunkSize, 0)
 
-		chunk := data[start:end] // ZERO COPY
+		chunk := data[start:end]
 
-		// optional highlight (this allocates only if match exists)
 		if len(searchTerm) != 0 && bytes.Contains(chunk, searchTerm) {
 			chunk = bytes.ReplaceAll(
 				chunk,
@@ -139,23 +132,23 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 		}
 
 		// will use bytes.Count as it will use simd
-		newlineCnt += int16(bytes.Count(chunk, []byte{'\n'}))
-		if newlineCnt > readLineCount {
-			// buf = append(buf, chunk[i+1:]...)
-			buf = append(buf, chunk...)
-			return string(buf), nil
-		}
+		// newlineCnt += int16(bytes.Count(chunk, []byte{'\n'}))
+		// if newlineCnt > readLineCount {
+		// 	// buf = append(buf, chunk[i+1:]...)
+		// 	buf = append(buf, chunk...)
+		// 	return string(buf), nil
+		// }
 
 		// print only as much lines as given readLineCount-> -n flag
-		// for i := len(chunk) - 1; i >= 0; i-- {
-		// 	if chunk[i] == '\n' {
-		// 		newlineCnt++
-		// 		if newlineCnt > readLineCount {
-		// 			buf = append(buf, chunk[i+1:]...)
-		// 			return string(buf), nil
-		// 		}
-		// 	}
-		// }
+		for i := len(chunk) - 1; i >= 0; i-- {
+			if chunk[i] == '\n' {
+				newlineCnt++
+				if newlineCnt > readLineCount {
+					buf = append(buf, chunk[i+1:]...)
+					return string(buf), nil
+				}
+			}
+		}
 
 		buf = append(buf, chunk...)
 		end = start
