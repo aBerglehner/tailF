@@ -10,6 +10,11 @@
 
 todo video
 [Watch demo](assets/demo.webm)
+<video width="480" controls>
+
+  <source src="assets/demo.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
 
 ### Summary
 
