@@ -15,7 +15,10 @@ import (
 	"time"
 )
 
-const MaxReadLineCount int16 = 32000
+const (
+	MaxReadLineCount int16 = 32000
+	DefaultLineCount int   = 600
+)
 
 var (
 	highlightColor = []byte("\033[31m")
@@ -29,7 +32,7 @@ func main() {
 		return
 	}
 	fileName := os.Args[len(os.Args)-1]
-	n := flag.Int("n", 100, "Number of lines")
+	n := flag.Int("n", DefaultLineCount, "Number of lines")
 	flag.Parse()
 
 	fmt.Printf("fileName: %v\n", fileName)
@@ -120,11 +123,13 @@ func ParallelSearchLastNLines(fileName string, readLineCount int16, search strin
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			chunks[i] = bytes.ReplaceAll(
-				chunks[i],
-				searchTerm,
-				highlightedSearch,
-			)
+			if len(searchTerm) != 0 && bytes.Contains(chunks[i], searchTerm) {
+				chunks[i] = bytes.ReplaceAll(
+					chunks[i],
+					searchTerm,
+					highlightedSearch,
+				)
+			}
 		}(i)
 	}
 	wg.Wait()
