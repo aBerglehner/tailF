@@ -48,6 +48,7 @@ func main() {
 		}
 	}()
 
+	// might be able to give os.Open also to SearchLastNLines
 	f, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -71,7 +72,7 @@ func main() {
 }
 
 func run(fileName string, readLineCount int16, searchTerm string) string {
-	str, err := ParallelSearchLastNLines(fileName, readLineCount, searchTerm)
+	str, err := SearchLastNLines(fileName, readLineCount, searchTerm)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err.Error()
@@ -79,7 +80,7 @@ func run(fileName string, readLineCount int16, searchTerm string) string {
 	return str
 }
 
-func ParallelSearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
+func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 
 	f, err := os.Open(fileName)
