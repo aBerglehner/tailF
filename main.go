@@ -8,7 +8,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -110,15 +112,38 @@ func ParallelSearchLastNLines(fileName string, readLineCount int16, search strin
 	offset := findOffset(data, readLineCount)
 	chunk := data[offset:]
 
-	if len(searchTerm) != 0 && bytes.Contains(chunk, searchTerm) {
-		chunk = bytes.ReplaceAll(
-			chunk,
-			searchTerm,
-			highlightedSearch,
-		)
-	}
+	workers := runtime.NumCPU()
+	chunks := splitTasks(chunk, workers)
 
-	return string(chunk), nil
+	var wg sync.WaitGroup
+	for i := range chunks {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			chunks[i] = bytes.ReplaceAll(
+				chunks[i],
+				searchTerm,
+				highlightedSearch,
+			)
+		}(i)
+	}
+	wg.Wait()
+
+	return string(bytes.Join(chunks, nil)), nil
+}
+
+func splitTasks[T any](tasks []T, n int) [][]T {
+	var chunks [][]T
+	length := len(tasks)
+	if n <= 0 {
+		n = 1
+	}
+	for i := 0; i < n; i++ {
+		start := i * length / n
+		end := (i + 1) * length / n
+		chunks = append(chunks, tasks[start:end])
+	}
+	return chunks
 }
 
 // this is not much faster than a primitive one but it could also scale better
