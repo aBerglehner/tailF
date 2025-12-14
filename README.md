@@ -8,14 +8,7 @@
 -tail -n 500 file.txt | grep "search"
 ```
 
-todo video
-![TailF Demo](assets/output.gif)
-[Watch demo](assets/output.gif)
-<video width="480" controls>
-
-  <source src="assets/output.gif" type="video/webm">
-  Your browser does not support the video tag.
-</video>
+![TailF Demo](assets/demo1.gif)
 
 ### Summary
 
