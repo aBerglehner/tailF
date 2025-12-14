@@ -57,11 +57,22 @@ func main() {
 	tailCh := make(chan string)
 	go tailF(f, fileName, tailCh)
 
+	var currentSearch string
+	var mu sync.Mutex
+
 	for {
 		select {
 		case s := <-tailCh:
-			fmt.Printf("%s", s)
+			mu.Lock()
+			search := currentSearch
+			mu.Unlock()
+
+			fmt.Printf("%s",
+				strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
 		case searchTerm := <-initSearchCh:
+			mu.Lock()
+			currentSearch = searchTerm
+			mu.Unlock()
 			// \033[H  -> moves the cursor to top-left
 			// \033[2J -> clears the screen
 			fmt.Print("\033[H\033[2J")
@@ -219,7 +230,7 @@ func tailF(f *os.File, path string, tailCh chan<- string) {
 
 		// If nothing new: sleep and check again
 		// TODO: try with lock
-		time.Sleep(3000 * time.Millisecond)
+		time.Sleep(6000 * time.Millisecond)
 
 		// Check if file grew
 		stat, err := os.Stat(path)
