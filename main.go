@@ -35,16 +35,12 @@ func main() {
 	n := flag.Int("n", DefaultLineCount, "Number of lines")
 	flag.Parse()
 
-	fmt.Printf("fileName: %v\n", fileName)
-	fmt.Printf("n: %v\n", *n)
-	fmt.Println("")
-
 	readLineCount := int16(min(*n, int(MaxReadLineCount)))
 
 	initSearchCh := make(chan string)
 	go func() {
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Enter search term (empty to clear): ")
+		initSearchCh <- ""
 		for {
 			text, _ := reader.ReadString('\n')
 			text = strings.TrimSpace(text)
