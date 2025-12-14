@@ -9,10 +9,11 @@
 ```
 
 todo video
-[Watch demo](assets/demo.webm)
+![TailF Demo](assets/output.gif)
+[Watch demo](assets/output.gif)
 <video width="480" controls>
 
-  <source src="assets/demo.webm" type="video/webm">
+  <source src="assets/output.gif" type="video/webm">
   Your browser does not support the video tag.
 </video>
 
