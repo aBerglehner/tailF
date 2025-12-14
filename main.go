@@ -40,7 +40,7 @@ func main() {
 	initSearchCh := make(chan string)
 	go func() {
 		reader := bufio.NewReader(os.Stdin)
-		// reads the file
+		// to init read the file
 		initSearchCh <- ""
 		for {
 			text, _ := reader.ReadString('\n')
