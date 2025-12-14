@@ -10,6 +10,8 @@ const FileName = "big.txt"
 
 // const FileName = "/var/log/syslog"
 
+// to test in cli the program
+// ❯ sudo perf stat go run main.go big.txt
 func BenchmarkFullSize(b *testing.B) {
 	b.ResetTimer()
 

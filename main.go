@@ -25,7 +25,6 @@ var (
 	resetColor     = []byte("\033[0m")
 )
 
-// ❯ sudo perf stat go run main.go big.txt
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("file argument missing! sample: main.go test.txt")
