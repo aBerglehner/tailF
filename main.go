@@ -20,6 +20,7 @@ var (
 	resetColor     = []byte("\033[0m")
 )
 
+// ❯ sudo perf stat go run main.go big.txt
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("file argument missing! sample: main.go test.txt")
@@ -69,7 +70,7 @@ func main() {
 }
 
 func run(fileName string, readLineCount int16, searchTerm string) string {
-	str, err := SearchLastNLines(fileName, readLineCount, searchTerm)
+	str, err := ParallelSearchLastNLines(fileName, readLineCount, searchTerm)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err.Error()
@@ -77,8 +78,7 @@ func run(fileName string, readLineCount int16, searchTerm string) string {
 	return str
 }
 
-// PERF:split it up to multiple go routines
-func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
+func ParallelSearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 
 	f, err := os.Open(fileName)
@@ -102,59 +102,73 @@ func SearchLastNLines(fileName string, readLineCount int16, search string) (stri
 	}
 	defer syscall.Munmap(data)
 
-	var buf []byte
-	var newlineCnt int16
-
 	highlightedSearch := append(
 		append([]byte{}, highlightColor...),
 		append(searchTerm, resetColor...)...,
 	)
 
-	// walk backwards in chunks (logical chunks, no copying)
-	// const chunkSize = 1024
-	// const chunkSize = 4096
-	// const chunkSize = 8192
-	// const chunkSize = 16384
-	const chunkSize = 20480
-	// const chunkSize = 24576
+	offset := findOffset(data, readLineCount)
+	chunk := data[offset:]
 
-	for end := len(data); end > 0 && newlineCnt <= readLineCount; {
-		start := max(end-chunkSize, 0)
-
-		chunk := data[start:end]
-
-		if len(searchTerm) != 0 && bytes.Contains(chunk, searchTerm) {
-			chunk = bytes.ReplaceAll(
-				chunk,
-				searchTerm,
-				highlightedSearch,
-			)
-		}
-
-		// will use bytes.Count as it will use simd
-		// newlineCnt += int16(bytes.Count(chunk, []byte{'\n'}))
-		// if newlineCnt > readLineCount {
-		// 	// buf = append(buf, chunk[i+1:]...)
-		// 	buf = append(buf, chunk...)
-		// 	return string(buf), nil
-		// }
-
-		// print only as much lines as given readLineCount-> -n flag
-		for i := len(chunk) - 1; i >= 0; i-- {
-			if chunk[i] == '\n' {
-				newlineCnt++
-				if newlineCnt > readLineCount {
-					buf = append(buf, chunk[i+1:]...)
-					return string(buf), nil
-				}
-			}
-		}
-
-		buf = append(buf, chunk...)
-		end = start
+	if len(searchTerm) != 0 && bytes.Contains(chunk, searchTerm) {
+		chunk = bytes.ReplaceAll(
+			chunk,
+			searchTerm,
+			highlightedSearch,
+		)
 	}
 
-	return string(buf), nil
+	return string(chunk), nil
+}
+
+// this is not much faster than a primitive one but it could also scale better
+// with newer cpus cause of better use of ipc
+// PERF: try stuff with Count as it uses bytecode simd
+// newlineCnt += int16(bytes.Count(chunk, []byte{'\n'}))
+func findOffset(data []byte, readLineCount int16) int {
+	var newlineCount int16 = 0
+	for i := len(data) - 1; i >= 4; i -= 5 {
+		if data[i] == '\n' {
+			newlineCount++
+			if newlineCount == readLineCount {
+				return i + 1
+			}
+		}
+		if data[i-1] == '\n' {
+			newlineCount++
+			if newlineCount == readLineCount {
+				return i
+			}
+		}
+		if data[i-2] == '\n' {
+			newlineCount++
+			if newlineCount == readLineCount {
+				return i - 1
+			}
+		}
+		if data[i-3] == '\n' {
+			newlineCount++
+			if newlineCount == readLineCount {
+				return i - 2
+			}
+		}
+		if data[i-4] == '\n' {
+			newlineCount++
+			if newlineCount == readLineCount {
+				return i - 3
+			}
+		}
+	}
+
+	for i := min(4, len(data)-1); i >= 0; i-- {
+		if data[i] == '\n' {
+			newlineCount++
+			if newlineCount == readLineCount {
+				return i + 1
+			}
+		}
+	}
+	return 0
 }
 
 func tailF(f *os.File, path string, tailCh chan<- string) {
