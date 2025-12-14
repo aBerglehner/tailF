@@ -48,7 +48,7 @@ func main() {
 		}
 	}()
 
-	// might be able to give os.Open also to SearchLastNLines
+	// PERF: might be able to give os.Open also to SearchLastNLines
 	f, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
