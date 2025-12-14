@@ -12,7 +12,7 @@ const FileName = "big.txt"
 
 // to test in cli the program
 // ❯ sudo perf stat go run main.go big.txt
-func BenchmarkMaxLineCount(b *testing.B) {
+func BenchmarkMaxLines(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -38,7 +38,7 @@ func BenchmarkMaxLineCount(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkQuaterOfLineCount(b *testing.B) {
+func BenchmarkQuaterOfLines(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -64,7 +64,7 @@ func BenchmarkQuaterOfLineCount(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkDefaultLineCount(b *testing.B) {
+func BenchmarkDefaultLines(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -90,7 +90,7 @@ func BenchmarkDefaultLineCount(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkMaxLineCountNoSearch(b *testing.B) {
+func BenchmarkMaxLinesNoSearch(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
