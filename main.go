@@ -110,10 +110,10 @@ func ParallelSearchLastNLines(fileName string, readLineCount int16, search strin
 	)
 
 	offset := findOffset(data, readLineCount)
-	chunk := data[offset:]
+	relevantData := data[offset:]
 
 	workers := runtime.NumCPU()
-	chunks := splitTasks(chunk, workers)
+	chunks := splitTasks(relevantData, workers)
 
 	var wg sync.WaitGroup
 	for i := range chunks {
