@@ -4,10 +4,10 @@ tailF: highlight given search
 * list last n lines
 * enter search
 * highlight last n lines(200?) when starting the program
-    -should be done by more go routines
+    * should be done by more go routines
 * after init search -> tail -f the file for the search
     * single routine that watches this
-    -highlight search as well
+    * highlight search as well
 * when new search was entered scan again last n lines -> and highlight for new search
 
 helper:
@@ -15,7 +15,9 @@ helper:
     -when program gets started and lines are over 100_000 create a new one with 200 lines
 * file with n lines to begin with
 
--compare n line scan vs tail -n | grep -> time, memory?
+* compare n line scan vs tail -n | grep -> time, memory?
+    -32_000 lines grep is 4ms vs program 5ms
+    -600 lines grep is 4ms vs program 0.2ms
 
 later:
 -make it case insensitive
@@ -23,6 +25,7 @@ later:
     -&/| should act as checker to add for more
 * able to add n lines override via argument -> that overrides default
 -change search color via argument
+-restructure the code
 
 
 how to parallel:
