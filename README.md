@@ -9,6 +9,7 @@
 ```
 
 todo video
+[Watch demo](assets/demo.webm)
 
 ### Summary
 
@@ -26,7 +27,7 @@ todo video
 
 ### of course this takes longer as it prints to your terminal and that is highly dependend on the emulator
 
-### I ran it on -> terminal alacritty tmux
+### I ran it on -> terminal: alacritty in tmux
 
 ## All benchmarks were run on:
 
@@ -59,7 +60,7 @@ ok      github.com/alex/tailF   9.561s
 
 ```bash
 #actually running tailF and searching on max size
-# terminal alacritty tmux
+# terminal: alacritty in tmux
 ❯ sudo perf stat ./tailF -n 32000 big.txt
 
 Performance counter stats for './tailF -n 32000 big.txt':
@@ -80,7 +81,7 @@ Performance counter stats for './tailF -n 32000 big.txt':
 
 
 # actually running tailF and searching on default lines(600)
-# terminal alacritty tmux
+# terminal: alacritty in tmux
 ❯ sudo perf stat ./tailF big.txt
 
  Performance counter stats for './tailF big.txt':
