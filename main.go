@@ -40,6 +40,7 @@ func main() {
 	initSearchCh := make(chan string)
 	go func() {
 		reader := bufio.NewReader(os.Stdin)
+		// reads the file
 		initSearchCh <- ""
 		for {
 			text, _ := reader.ReadString('\n')
@@ -111,8 +112,12 @@ func ParallelSearchLastNLines(fileName string, readLineCount int16, search strin
 	offset := findOffset(data, readLineCount)
 	relevantData := data[offset:]
 
+	// this is needed for the compromise that the search replace miss is minimal
+	// as we search replace on chunks it could happen that we don't have the needed bytes
+	// in the chunk to match the search so we miss the replace
+	neededWorkers := len(relevantData) / 32_768
 	workers := runtime.NumCPU()
-	chunks := splitTasks(relevantData, workers)
+	chunks := splitTasks(relevantData, min(neededWorkers, workers))
 
 	var wg sync.WaitGroup
 	for i := range chunks {
