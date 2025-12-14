@@ -62,13 +62,11 @@ func BenchmarkQuaterOfSize(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func Benchmark1000LinesSyslog(b *testing.B) {
-	fileName := "/var/log/syslog"
-	var readLineCount int16 = 1000
+func BenchmarkDefaultBigTxt(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(fileName, readLineCount, "th")
+		run(FileName, int16(DefaultLineCount), "th")
 	}
 
 	b.StopTimer()
@@ -76,7 +74,33 @@ func Benchmark1000LinesSyslog(b *testing.B) {
 	nsPerOp := float64(b.Elapsed().Nanoseconds()) / float64(b.N)
 	secondsPerOp := float64(nsPerOp) * 1e-9
 
-	byteSize, err := lastNLinesSize(fileName, int(readLineCount))
+	byteSize, err := lastNLinesSize(FileName, DefaultLineCount)
+	if err != nil {
+		return
+	}
+
+	throughputBytesPerSec := float64(byteSize) / secondsPerOp
+	throughputMBps := throughputBytesPerSec / (1024 * 1024)
+	mbSize := float64(byteSize) / 1024 / 1024
+
+	b.ReportMetric(nsPerOp/1e6, "ms/op")
+	b.ReportMetric(throughputMBps, "throughput/MBps")
+	b.ReportMetric(mbSize, "inputSize/mb")
+}
+
+func BenchmarkFullSizeNoSearch(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		run(FileName, MaxReadLineCount, "")
+	}
+
+	b.StopTimer()
+
+	nsPerOp := float64(b.Elapsed().Nanoseconds()) / float64(b.N)
+	secondsPerOp := float64(nsPerOp) * 1e-9
+
+	byteSize, err := lastNLinesSize(FileName, int(MaxReadLineCount))
 	if err != nil {
 		return
 	}
