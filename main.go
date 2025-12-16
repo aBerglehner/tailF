@@ -30,9 +30,17 @@ func main() {
 		fmt.Println("file argument missing! sample: main.go test.txt")
 		return
 	}
+	fmt.Printf("os.Args[1]: %v\n", os.Args[1])
+	if len(os.Args) == 1 && os.Args[1] == "options" {
+		fmt.Println("see options")
+		return
+	}
 	fileName := os.Args[len(os.Args)-1]
 	n := flag.Int("n", DefaultLineCount, "Number of lines")
+	grepOnly := flag.Bool("g", false, "print only lines that match")
 	flag.Parse()
+
+	fmt.Printf("grepOnly: %v\n", *grepOnly)
 
 	readLineCount := int16(min(*n, int(MaxReadLineCount)))
 
@@ -67,8 +75,10 @@ func main() {
 			search := currentSearch
 			mu.Unlock()
 
-			fmt.Printf("%s",
-				strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
+			if *grepOnly && strings.Contains(s, search) {
+				fmt.Printf("%s",
+					strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
+			}
 		case searchTerm := <-initSearchCh:
 			mu.Lock()
 			currentSearch = searchTerm
@@ -76,14 +86,20 @@ func main() {
 			// \033[H  -> moves the cursor to top-left
 			// \033[2J -> clears the screen
 			fmt.Print("\033[H\033[2J")
-			str := run(fileName, readLineCount, searchTerm)
+			str := run(fileName, readLineCount, searchTerm, *grepOnly)
 			fmt.Printf("%s", str)
 		}
 	}
 }
 
-func run(fileName string, readLineCount int16, searchTerm string) string {
-	str, err := SearchLastNLines(fileName, readLineCount, searchTerm)
+func run(fileName string, readLineCount int16, searchTerm string, grepOnly bool) string {
+	var str string
+	var err error
+	if grepOnly {
+		str, err = GrepSearch(fileName, readLineCount, searchTerm)
+	} else {
+		str, err = HighlightSearch(fileName, readLineCount, searchTerm)
+	}
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err.Error()
@@ -91,7 +107,104 @@ func run(fileName string, readLineCount int16, searchTerm string) string {
 	return str
 }
 
-func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
+func GrepSearch(fileName string, readLineCount int16, search string) (string, error) {
+	searchTerm := []byte(search)
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+	size := stat.Size()
+	if size == 0 {
+		return "", nil
+	}
+
+	data, err := syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
+	if err != nil {
+		return "", err
+	}
+	defer syscall.Munmap(data)
+
+	highlightedSearch := append(
+		append([]byte{}, highlightColor...),
+		append(searchTerm, resetColor...)...,
+	)
+
+	offset := findOffset(data, readLineCount)
+	relevantData := data[offset:]
+
+	// this is needed for the compromise that the search replace miss is minimal
+	// as we search replace on chunks it could happen that we don't have the needed bytes
+	// in the chunk to match the search so we miss the replace
+	neededWorkers := len(relevantData) / 32_768
+	workers := runtime.NumCPU()
+	chunks := splitTasks(relevantData, min(neededWorkers, workers))
+
+	var wg sync.WaitGroup
+	for i := range chunks {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			if len(searchTerm) != 0 && bytes.Contains(chunks[i], searchTerm) {
+				chunks[i] = filterAndHighlightSearch(chunks[i], searchTerm, highlightedSearch)
+				// chunks[i] = t(chunks[i], searchTerm, highlightedSearch)
+				// chunks[i] = bytes.ReplaceAll(
+				// 	chunks[i],
+				// 	searchTerm,
+				// 	highlightedSearch,
+				// )
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	return string(bytes.Join(chunks, nil)), nil
+}
+
+func filterAndHighlightSearch(chunk, search, highlight []byte) []byte {
+	res := make([]byte, 0, len(chunk))
+	start := 0
+
+	for i := 0; i < len(chunk); i++ {
+		if chunk[i] != '\n' {
+			continue
+		}
+
+		line := chunk[start : i+1]
+
+		pos := bytes.Index(line, search)
+		if pos == -1 {
+			start = i + 1
+			continue
+		}
+
+		// continue as long as search is found
+		last := 0
+		for pos != -1 {
+			res = append(res, line[last:pos]...)
+			res = append(res, highlight...)
+
+			last = pos + len(search)
+			pos = bytes.Index(line[last:], search)
+			if pos != -1 {
+				pos += last
+			}
+		}
+
+		res = append(res, line[last:]...)
+		start = i + 1
+	}
+
+	return res
+}
+
+func HighlightSearch(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 
 	f, err := os.Open(fileName)

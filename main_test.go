@@ -12,11 +12,13 @@ const FileName = "big.txt"
 
 // to test in cli the program
 // ❯ sudo perf stat go run main.go big.txt
-func BenchmarkMaxLines(b *testing.B) {
+
+// only hightlight search part
+func BenchmarkMaxLines_Highlight(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount, "th")
+		run(FileName, MaxReadLineCount, "th", false)
 	}
 
 	b.StopTimer()
@@ -38,11 +40,37 @@ func BenchmarkMaxLines(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkQuaterOfLines(b *testing.B) {
+func BenchmarkMaxLines_GrepSearch(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount/4, "th")
+		run(FileName, MaxReadLineCount, "th", true)
+	}
+
+	b.StopTimer()
+
+	nsPerOp := float64(b.Elapsed().Nanoseconds()) / float64(b.N)
+	secondsPerOp := float64(nsPerOp) * 1e-9
+
+	byteSize, err := lastNLinesSize(FileName, int(MaxReadLineCount))
+	if err != nil {
+		return
+	}
+
+	throughputBytesPerSec := float64(byteSize) / secondsPerOp
+	throughputMBps := throughputBytesPerSec / (1024 * 1024)
+	mbSize := float64(byteSize) / 1024 / 1024
+
+	b.ReportMetric(nsPerOp/1e6, "ms/op")
+	b.ReportMetric(throughputMBps, "throughput/MBps")
+	b.ReportMetric(mbSize, "inputSize/mb")
+}
+
+func BenchmarkQuaterOfLines_Highlight(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		run(FileName, MaxReadLineCount/4, "th", false)
 	}
 
 	b.StopTimer()
@@ -64,11 +92,37 @@ func BenchmarkQuaterOfLines(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkDefaultLines(b *testing.B) {
+func BenchmarkQuaterOfLines_GrepSearch(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, int16(DefaultLineCount), "th")
+		run(FileName, MaxReadLineCount/4, "th", true)
+	}
+
+	b.StopTimer()
+
+	nsPerOp := float64(b.Elapsed().Nanoseconds()) / float64(b.N)
+	secondsPerOp := float64(nsPerOp) * 1e-9
+
+	byteSize, err := lastNLinesSize(FileName, int(MaxReadLineCount)/4)
+	if err != nil {
+		return
+	}
+
+	throughputBytesPerSec := float64(byteSize) / secondsPerOp
+	throughputMBps := throughputBytesPerSec / (1024 * 1024)
+	mbSize := float64(byteSize) / 1024 / 1024
+
+	b.ReportMetric(nsPerOp/1e6, "ms/op")
+	b.ReportMetric(throughputMBps, "throughput/MBps")
+	b.ReportMetric(mbSize, "inputSize/mb")
+}
+
+func BenchmarkDefaultLines_Highlight(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		run(FileName, int16(DefaultLineCount), "th", false)
 	}
 
 	b.StopTimer()
@@ -90,11 +144,63 @@ func BenchmarkDefaultLines(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkMaxLinesNoSearch(b *testing.B) {
+func BenchmarkDefaultLines_GrepSearch(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount, "")
+		run(FileName, int16(DefaultLineCount), "th", true)
+	}
+
+	b.StopTimer()
+
+	nsPerOp := float64(b.Elapsed().Nanoseconds()) / float64(b.N)
+	secondsPerOp := float64(nsPerOp) * 1e-9
+
+	byteSize, err := lastNLinesSize(FileName, DefaultLineCount)
+	if err != nil {
+		return
+	}
+
+	throughputBytesPerSec := float64(byteSize) / secondsPerOp
+	throughputMBps := throughputBytesPerSec / (1024 * 1024)
+	mbSize := float64(byteSize) / 1024 / 1024
+
+	b.ReportMetric(nsPerOp/1e6, "ms/op")
+	b.ReportMetric(throughputMBps, "throughput/MBps")
+	b.ReportMetric(mbSize, "inputSize/mb")
+}
+
+func BenchmarkMaxLinesNoSearch_Highlight(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		run(FileName, MaxReadLineCount, "", false)
+	}
+
+	b.StopTimer()
+
+	nsPerOp := float64(b.Elapsed().Nanoseconds()) / float64(b.N)
+	secondsPerOp := float64(nsPerOp) * 1e-9
+
+	byteSize, err := lastNLinesSize(FileName, int(MaxReadLineCount))
+	if err != nil {
+		return
+	}
+
+	throughputBytesPerSec := float64(byteSize) / secondsPerOp
+	throughputMBps := throughputBytesPerSec / (1024 * 1024)
+	mbSize := float64(byteSize) / 1024 / 1024
+
+	b.ReportMetric(nsPerOp/1e6, "ms/op")
+	b.ReportMetric(throughputMBps, "throughput/MBps")
+	b.ReportMetric(mbSize, "inputSize/mb")
+}
+
+func BenchmarkMaxLinesNoSearch_GrepSearch(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		run(FileName, MaxReadLineCount, "", true)
 	}
 
 	b.StopTimer()
