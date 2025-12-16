@@ -1,5 +1,7 @@
 ## Interactive replacement for -> tail -f -n 600 file.txt | grep "search"
 
+### with the difference without options it is only highlighting the search
+
 ### No dependencies! only the go standard library
 
 ### The goal was to fast and interactive watch and search(highlight) a file without everytime when I want to change the search that I need to cancel and start the last "tail | grep" again.
@@ -9,6 +11,10 @@
 ```
 
 ![TailF Demo](assets/demo1.gif)
+
+## Argument options:
+
+### main.go -n 50 file.txt -> -n specifies how many lines to watch
 
 ### Summary
 
