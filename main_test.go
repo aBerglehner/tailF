@@ -40,7 +40,7 @@ func BenchmarkMaxLines_Highlight(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkMaxLines_GrepSearch(b *testing.B) {
+func BenchmarkMaxLines_GrepFlag(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -92,7 +92,7 @@ func BenchmarkQuaterOfLines_Highlight(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkQuaterOfLines_GrepSearch(b *testing.B) {
+func BenchmarkQuaterOfLines_GrepFlag(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -144,7 +144,7 @@ func BenchmarkDefaultLines_Highlight(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkDefaultLines_GrepSearch(b *testing.B) {
+func BenchmarkDefaultLines_GrepFlag(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -196,7 +196,7 @@ func BenchmarkMaxLinesNoSearch_Highlight(b *testing.B) {
 	b.ReportMetric(mbSize, "inputSize/mb")
 }
 
-func BenchmarkMaxLinesNoSearch_GrepSearch(b *testing.B) {
+func BenchmarkMaxLinesNoSearch_GrepFlag(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
