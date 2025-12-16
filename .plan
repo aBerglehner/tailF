@@ -1,40 +1,14 @@
-tailF: highlight given search
+todo:
 
-* take a file to watch as argument
-* list last n lines
-* enter search
-* highlight last n lines(200?) when starting the program
-    * should be done by more go routines
-* after init search -> tail -f the file for the search
-    * single routine that watches this
-    * highlight search as well
-* when new search was entered scan again last n lines -> and highlight for new search
 
-helper:
-* program that writes log lines to a sample file
-    -when program gets started and lines are over 100_000 create a new one with 200 lines
-* file with n lines to begin with
-
-* compare n line scan vs tail -n | grep -> time, memory?
-    -32_000 lines grep is 4ms vs program 5ms
-    -600 lines grep is 4ms vs program 0.2ms
 
 later:
+-restructure the code
+-change search color via argument
 -make it case insensitive
 -able to and/or searches to grep for more than one word
     -&/| should act as checker to add for more
-* able to add n lines override via argument -> that overrides default
--change search color via argument
--restructure the code
 
 
-how to parallel:
-    1:
-        -set bigChunk (overall one) to ~512k
-        -divide overall size / bigChunk
-        -go routine knows offset
-            -it need to return to channel -> struct{offset,strBuilder}
-        -loop through buffered channel
-            -save it into []struct{offset,strBuilder}
-            -order it with offset (so you get the right string ordering)
-            -build the string
+
+perf:
