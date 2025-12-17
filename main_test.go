@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-const FileName = "big.txt"
+const FileName = "./assets/testFiles/big.txt"
 
 // const FileName = "/var/log/syslog"
 

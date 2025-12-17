@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-go run main.go test.txt
+go run main.go ./assets/testFiles/test.txt

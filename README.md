@@ -59,16 +59,16 @@ ok      github.com/alex/tailF   9.561s
 
 ```
 
-### For the tests you need to run createTestFile.sh first -> this will create big.txt
+### For the tests you need to run createTestFile.sh first -> this will create ./assets/testFiles/big.txt
 
 # GNU tools
 
 ```bash
 #actually running tailF and searching on max size
 # terminal: alacritty in tmux
-❯ sudo perf stat ./tailF -n 32000 big.txt
+❯ sudo perf stat ./tailF -n 32000 ./assets/testFiles/big.txt
 
-Performance counter stats for './tailF -n 32000 big.txt':
+Performance counter stats for './tailF -n 32000 ./assets/testFiles/big.txt':
 
             522,21 msec task-clock                       #    0,028 CPUs utilized
              2.159      context-switches                 #    4,134 K/sec
@@ -87,9 +87,9 @@ Performance counter stats for './tailF -n 32000 big.txt':
 
 # actually running tailF and searching on default lines(600)
 # terminal: alacritty in tmux
-❯ sudo perf stat ./tailF big.txt
+❯ sudo perf stat ./tailF ./assets/testFiles/big.txt
 
- Performance counter stats for './tailF big.txt':
+ Performance counter stats for './tailF ./assets/testFiles/big.txt':
 
              13,71 msec task-clock                       #    0,001 CPUs utilized
                296      context-switches                 #   21,589 K/sec
@@ -111,10 +111,10 @@ Performance counter stats for './tailF -n 32000 big.txt':
 
 # more extended stat version from summary above
 ❯ sudo perf stat -r 50 \
-  sh -c 'tail -n 32000 big.txt | grep "th" > /dev/null'
+  sh -c 'tail -n 32000 ./assets/testFiles/big.txt | grep "th" > /dev/null'
 
 
- Performance counter stats for 'sh -c tail -n 32000 big.txt | grep "th" > /dev/null' (50 runs):
+ Performance counter stats for 'sh -c tail -n 32000 ./assets/testFiles/big.txt | grep "th" > /dev/null' (50 runs):
 
               5,21 msec task-clock                       #    1,367 CPUs utilized               ( +-  0,34% )
                159      context-switches                 #   30,544 K/sec                       ( +-  0,63% )
@@ -131,10 +131,10 @@ Performance counter stats for './tailF -n 32000 big.txt':
 
 # more extended stat version from summary above
 ❯ sudo perf stat -r 50 \
-  sh -c 'tail -n 600 big.txt | grep "th" > /dev/null'
+  sh -c 'tail -n 600 ./assets/testFiles/big.txt | grep "th" > /dev/null'
 
 
- Performance counter stats for 'sh -c tail -n 600 big.txt | grep "th" > /dev/null' (50 runs):
+ Performance counter stats for 'sh -c tail -n 600 ./assets/testFiles/big.txt | grep "th" > /dev/null' (50 runs):
 
               1,89 msec task-clock                       #    1,192 CPUs utilized               ( +-  0,39% )
                  3      context-switches                 #    1,585 K/sec                       ( +-  1,35% )
