@@ -1,4 +1,4 @@
-## Interactive replacement for -> tail -f -n 600 file.txt | grep "search"
+## Interactive replacement for -> tail -f -n 1000 file.txt | grep "search"
 
 ### with the difference without options it is only highlighting the search
 
