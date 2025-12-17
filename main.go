@@ -79,6 +79,10 @@ func main() {
 				fmt.Printf("%s",
 					strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
 			}
+			if !*grepOnly {
+				fmt.Printf("%s",
+					strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
+			}
 		case searchTerm := <-initSearchCh:
 			mu.Lock()
 			currentSearch = searchTerm
