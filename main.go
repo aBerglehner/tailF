@@ -17,7 +17,7 @@ import (
 
 const (
 	MaxReadLineCount int16 = 32000
-	DefaultLineCount int   = 1000
+	DefaultLineCount int   = 500
 )
 
 var (
@@ -97,7 +97,14 @@ func main() {
 }
 
 func run(fileName string, readLineCount int16, searchTerm string, grepOnly bool) string {
-	str, err := SearchLastNLines(fileName, readLineCount, searchTerm, grepOnly)
+	var str string
+	var err error
+	if grepOnly {
+		str, err = FindNSearchMatches(fileName, readLineCount, searchTerm)
+	} else {
+		str, err = SearchLastNLines(fileName, readLineCount, searchTerm)
+	}
+
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return err.Error()
@@ -105,7 +112,83 @@ func run(fileName string, readLineCount int16, searchTerm string, grepOnly bool)
 	return str
 }
 
-func SearchLastNLines(fileName string, readLineCount int16, search string, grepOnly bool) (string, error) {
+func FindNSearchMatches(fileName string, readLineCount int16, search string) (string, error) {
+	searchTerm := []byte(search)
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+	size := stat.Size()
+	if size == 0 {
+		return "", nil
+	}
+
+	data, err := syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
+	if err != nil {
+		return "", err
+	}
+	defer syscall.Munmap(data)
+
+	highlightedSearch := append(
+		append([]byte{}, highlightColor...),
+		append(searchTerm, resetColor...)...,
+	)
+
+	predictedGeneralThroughputPerSecond := 600
+	waitingTimeMs := 100
+	bytesThroughputPerMs := predictedGeneralThroughputPerSecond * 1024 * 1024 / 1000
+
+	predictedOffset := len(data) - (bytesThroughputPerMs * waitingTimeMs)
+	offset := max(0, predictedOffset)
+	relevantData := data[offset:]
+
+	if len(searchTerm) == 0 {
+		countOffset := findOffset(relevantData, readLineCount)
+		return string(relevantData[countOffset:]), nil
+	}
+
+	totalCount := int(readLineCount)
+	end := len(relevantData)
+	for totalCount > 0 && end > 0 {
+		newStart := max(end-32_768, 0)
+		totalCount -= bytes.Count(relevantData[newStart:end], searchTerm)
+		end = newStart
+	}
+	relevantData = relevantData[end:]
+
+	// this is needed for the compromise that the search replace miss is minimal
+	// as we search replace on chunks it could happen that we don't have the needed bytes
+	// in the chunk to match the search so we miss the replace
+	neededWorkers := len(relevantData) / 32_768
+	workers := runtime.NumCPU()
+	chunks := splitTasks(relevantData, min(neededWorkers, workers))
+
+	var wg sync.WaitGroup
+	for i := range chunks {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			if len(searchTerm) != 0 && bytes.Contains(chunks[i], searchTerm) {
+				chunks[i] = filterAndHighlightSearch(chunks[i], searchTerm, highlightedSearch)
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	// only present needed readLineCount
+	result := bytes.Join(chunks, nil)
+	countOffset := findOffset(result, readLineCount)
+	return string(result[countOffset:]), nil
+}
+
+func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 
 	f, err := os.Open(fileName)
@@ -137,6 +220,10 @@ func SearchLastNLines(fileName string, readLineCount int16, search string, grepO
 	offset := findOffset(data, readLineCount)
 	relevantData := data[offset:]
 
+	if len(searchTerm) == 0 {
+		return string(relevantData), nil
+	}
+
 	// this is needed for the compromise that the search replace miss is minimal
 	// as we search replace on chunks it could happen that we don't have the needed bytes
 	// in the chunk to match the search so we miss the replace
@@ -150,15 +237,11 @@ func SearchLastNLines(fileName string, readLineCount int16, search string, grepO
 		go func(i int) {
 			defer wg.Done()
 			if len(searchTerm) != 0 && bytes.Contains(chunks[i], searchTerm) {
-				if grepOnly {
-					chunks[i] = filterAndHighlightSearch(chunks[i], searchTerm, highlightedSearch)
-				} else {
-					chunks[i] = bytes.ReplaceAll(
-						chunks[i],
-						searchTerm,
-						highlightedSearch,
-					)
-				}
+				chunks[i] = bytes.ReplaceAll(
+					chunks[i],
+					searchTerm,
+					highlightedSearch,
+				)
 			}
 		}(i)
 	}

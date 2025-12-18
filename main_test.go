@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"testing"
 )
@@ -212,6 +213,45 @@ func BenchmarkMaxLinesNoSearch_GrepFlag(b *testing.B) {
 	if err != nil {
 		return
 	}
+
+	throughputBytesPerSec := float64(byteSize) / secondsPerOp
+	throughputMBps := throughputBytesPerSec / (1024 * 1024)
+	mbSize := float64(byteSize) / 1024 / 1024
+
+	b.ReportMetric(nsPerOp/1e6, "ms/op")
+	b.ReportMetric(throughputMBps, "throughput/MBps")
+	b.ReportMetric(mbSize, "inputSize/mb")
+}
+
+func BenchmarkDefault_Grep_eng(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		run("assets/testFiles/eng_newscrawl_2018_1M-sentences.txt", MaxReadLineCount, "suspicious", true)
+	}
+
+	b.StopTimer()
+
+	nsPerOp := float64(b.Elapsed().Nanoseconds()) / float64(b.N)
+	secondsPerOp := float64(nsPerOp) * 1e-9
+
+	// byteSize, err := lastNLinesSize("assets/testFiles/eng_newscrawl_2018_1M-sentences.txt", int(MaxReadLineCount))
+	// if err != nil {
+	// 	return
+	// }
+
+	info, err := os.Stat("assets/testFiles/eng_newscrawl_2018_1M-sentences.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	size := info.Size()
+
+	predictedGeneralThroughputPerSecond := int64(600)
+	waitingTimeMs := int64(100)
+	bytesThroughputPerMs := predictedGeneralThroughputPerSecond * 1024 * 1024 / 1000
+	cur := max(0, size-(waitingTimeMs*bytesThroughputPerMs))
+	byteSize := min(size, cur)
 
 	throughputBytesPerSec := float64(byteSize) / secondsPerOp
 	throughputMBps := throughputBytesPerSec / (1024 * 1024)
