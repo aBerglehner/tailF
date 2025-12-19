@@ -16,8 +16,12 @@ import (
 )
 
 const (
-	MaxReadLineCount int16 = 32000
-	DefaultLineCount int   = 500
+	MaxReadLineCount                    int16 = 32000
+	DefaultLineCount                    int   = 500
+	PredictedGeneralThroughputPerSecond int   = 1200
+	WaitingTimeMs                       int   = 50
+	BytesThroughputPerMs                int   = PredictedGeneralThroughputPerSecond * 1024 * 1024 / 1000
+	TotalThroughput                     int   = (BytesThroughputPerMs * WaitingTimeMs)
 )
 
 var (
@@ -141,11 +145,7 @@ func FindNSearchMatches(fileName string, readLineCount int16, search string) (st
 		append(searchTerm, resetColor...)...,
 	)
 
-	predictedGeneralThroughputPerSecond := 600
-	waitingTimeMs := 100
-	bytesThroughputPerMs := predictedGeneralThroughputPerSecond * 1024 * 1024 / 1000
-
-	predictedOffset := len(data) - (bytesThroughputPerMs * waitingTimeMs)
+	predictedOffset := len(data) - TotalThroughput
 	offset := max(0, predictedOffset)
 	relevantData := data[offset:]
 
