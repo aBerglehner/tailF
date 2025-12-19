@@ -20,13 +20,13 @@ fi
 
 for i in {1..50}; do
 	sleep 1.5
-	yes ${first} | head -n 1 >>./assets/testFiles/test.txt
+	echo "$(date '+%Y-%m-%d %H:%M:%S') $(yes "$first" | head -n 1)" >>./assets/testFiles/test.txt
 	sleep 1.5
-	yes ${second} | head -n 1 >>./assets/testFiles/test.txt
+	echo "$(date '+%Y-%m-%d %H:%M:%S') $(yes "$second" | head -n 1)" >>./assets/testFiles/test.txt
 	sleep 1.5
-	yes ${third} | head -n 1 >>./assets/testFiles/test.txt
+	echo "$(date '+%Y-%m-%d %H:%M:%S') $(yes "$third" | head -n 1)" >>./assets/testFiles/test.txt
 	sleep 1.5
-	yes ${fourth} | head -n 1 >>./assets/testFiles/test.txt
+	echo "$(date '+%Y-%m-%d %H:%M:%S') $(yes "$fourth" | head -n 1)" >>./assets/testFiles/test.txt
 	sleep 1.5
-	yes ${five} | head -n 1 >>./assets/testFiles/test.txt
+	echo "$(date '+%Y-%m-%d %H:%M:%S') $(yes "$five" | head -n 1)" >>./assets/testFiles/test.txt
 done
