@@ -41,10 +41,8 @@ func main() {
 	}
 	fileName := os.Args[len(os.Args)-1]
 	n := flag.Int("n", DefaultLineCount, "Number of lines")
-	grepOnly := flag.Bool("g", false, "print only lines that match")
+	highlightOnly := flag.Bool("h", false, "print all lines and highlight search")
 	flag.Parse()
-
-	fmt.Printf("grepOnly: %v\n", *grepOnly)
 
 	readLineCount := int16(min(*n, int(MaxReadLineCount)))
 
@@ -79,11 +77,11 @@ func main() {
 			search := currentSearch
 			mu.Unlock()
 
-			if *grepOnly && strings.Contains(s, search) {
+			if !*highlightOnly && strings.Contains(s, search) {
 				fmt.Printf("%s",
 					strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
 			}
-			if !*grepOnly {
+			if *highlightOnly {
 				fmt.Printf("%s",
 					strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
 			}
@@ -94,19 +92,19 @@ func main() {
 			// \033[H  -> moves the cursor to top-left
 			// \033[2J -> clears the screen
 			fmt.Print("\033[H\033[2J")
-			str := run(fileName, readLineCount, searchTerm, *grepOnly)
+			str := run(fileName, readLineCount, searchTerm, *highlightOnly)
 			fmt.Printf("%s", str)
 		}
 	}
 }
 
-func run(fileName string, readLineCount int16, searchTerm string, grepOnly bool) string {
+func run(fileName string, readLineCount int16, searchTerm string, highlightOnly bool) string {
 	var str string
 	var err error
-	if grepOnly {
-		str, err = FindNSearchMatches(fileName, readLineCount, searchTerm)
+	if highlightOnly {
+		str, err = highlightSearch(fileName, readLineCount, searchTerm)
 	} else {
-		str, err = SearchLastNLines(fileName, readLineCount, searchTerm)
+		str, err = findNSearchMatches(fileName, readLineCount, searchTerm)
 	}
 
 	if err != nil {
@@ -116,7 +114,7 @@ func run(fileName string, readLineCount int16, searchTerm string, grepOnly bool)
 	return str
 }
 
-func FindNSearchMatches(fileName string, readLineCount int16, search string) (string, error) {
+func findNSearchMatches(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 
 	f, err := os.Open(fileName)
@@ -188,7 +186,7 @@ func FindNSearchMatches(fileName string, readLineCount int16, search string) (st
 	return string(result[countOffset:]), nil
 }
 
-func SearchLastNLines(fileName string, readLineCount int16, search string) (string, error) {
+func highlightSearch(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 
 	f, err := os.Open(fileName)
