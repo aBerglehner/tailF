@@ -39,9 +39,9 @@ func main() {
 		return
 	}
 	fileName := os.Args[len(os.Args)-1]
-	n := flag.Int("n", DefaultLineCount, "Number of lines")
-	highlightOnly := flag.Bool("h", false, "print all lines and highlight search")
 	searchTimeMs := flag.Int("t", DefaultSearchTimeMs, "max search time in ms only relevent in normal (grep) mode")
+	n := flag.Int("n", DefaultLineCount, "number of lines to search")
+	highlightOnly := flag.Bool("h", false, "print all lines and highlight search")
 	flag.Parse()
 
 	readLineCount := int16(min(*n, int(MaxReadLineCount)))
@@ -187,6 +187,43 @@ func findNSearchMatches(fileName string, readLineCount int16, search string, sea
 	return string(result[countOffset:]), nil
 }
 
+func filterAndHighlightSearch(chunk, search, highlight []byte) []byte {
+	res := make([]byte, 0, len(chunk))
+	start := 0
+
+	for i := 0; i < len(chunk); i++ {
+		if chunk[i] != '\n' {
+			continue
+		}
+
+		line := chunk[start : i+1]
+
+		pos := bytes.Index(line, search)
+		if pos == -1 {
+			start = i + 1
+			continue
+		}
+
+		// continue as long as search is found
+		last := 0
+		for pos != -1 {
+			res = append(res, line[last:pos]...)
+			res = append(res, highlight...)
+
+			last = pos + len(search)
+			pos = bytes.Index(line[last:], search)
+			if pos != -1 {
+				pos += last
+			}
+		}
+
+		res = append(res, line[last:]...)
+		start = i + 1
+	}
+
+	return res
+}
+
 func highlightSearch(fileName string, readLineCount int16, search string) (string, error) {
 	searchTerm := []byte(search)
 
@@ -247,43 +284,6 @@ func highlightSearch(fileName string, readLineCount int16, search string) (strin
 	wg.Wait()
 
 	return string(bytes.Join(chunks, nil)), nil
-}
-
-func filterAndHighlightSearch(chunk, search, highlight []byte) []byte {
-	res := make([]byte, 0, len(chunk))
-	start := 0
-
-	for i := 0; i < len(chunk); i++ {
-		if chunk[i] != '\n' {
-			continue
-		}
-
-		line := chunk[start : i+1]
-
-		pos := bytes.Index(line, search)
-		if pos == -1 {
-			start = i + 1
-			continue
-		}
-
-		// continue as long as search is found
-		last := 0
-		for pos != -1 {
-			res = append(res, line[last:pos]...)
-			res = append(res, highlight...)
-
-			last = pos + len(search)
-			pos = bytes.Index(line[last:], search)
-			if pos != -1 {
-				pos += last
-			}
-		}
-
-		res = append(res, line[last:]...)
-		start = i + 1
-	}
-
-	return res
 }
 
 func splitTasks[T any](tasks []T, n int) [][]T {
