@@ -16,7 +16,10 @@ Default: 50 ms, which corresponds to ~60 MB on my machine.
 
 ### and of course if it read the whole file
 
-### there is one downside for now: if newlines are coming in you have 5 sec to type and enter what you search for but mostly this more more than enough (otherwise learn to type)
+### One current limitation
+
+If new lines keep arriving, you have a 5-second window to type and submit your search query. In most cases this is more than sufficient.
+(otherwise learn to type)
 
 ![TailF Demo](assets/demo_0.2.0.gif)
 
