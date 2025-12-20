@@ -19,9 +19,8 @@ const (
 	MaxReadLineCount                    int16 = 32000
 	DefaultLineCount                    int   = 500
 	PredictedGeneralThroughputPerSecond int   = 1200
-	WaitingTimeMs                       int   = 50
+	DefaultSearchTimeMs                 int   = 50
 	BytesThroughputPerMs                int   = PredictedGeneralThroughputPerSecond * 1024 * 1024 / 1000
-	TotalThroughput                     int   = (BytesThroughputPerMs * WaitingTimeMs)
 )
 
 var (
@@ -42,6 +41,7 @@ func main() {
 	fileName := os.Args[len(os.Args)-1]
 	n := flag.Int("n", DefaultLineCount, "Number of lines")
 	highlightOnly := flag.Bool("h", false, "print all lines and highlight search")
+	searchTimeMs := flag.Int("t", DefaultSearchTimeMs, "max search time in ms only relevent in normal (grep) mode")
 	flag.Parse()
 
 	readLineCount := int16(min(*n, int(MaxReadLineCount)))
@@ -92,19 +92,19 @@ func main() {
 			// \033[H  -> moves the cursor to top-left
 			// \033[2J -> clears the screen
 			fmt.Print("\033[H\033[2J")
-			str := run(fileName, readLineCount, searchTerm, *highlightOnly)
+			str := run(fileName, readLineCount, searchTerm, *highlightOnly, *searchTimeMs)
 			fmt.Printf("%s", str)
 		}
 	}
 }
 
-func run(fileName string, readLineCount int16, searchTerm string, highlightOnly bool) string {
+func run(fileName string, readLineCount int16, searchTerm string, highlightOnly bool, searchTimeMs int) string {
 	var str string
 	var err error
 	if highlightOnly {
 		str, err = highlightSearch(fileName, readLineCount, searchTerm)
 	} else {
-		str, err = findNSearchMatches(fileName, readLineCount, searchTerm)
+		str, err = findNSearchMatches(fileName, readLineCount, searchTerm, searchTimeMs)
 	}
 
 	if err != nil {
@@ -114,7 +114,7 @@ func run(fileName string, readLineCount int16, searchTerm string, highlightOnly 
 	return str
 }
 
-func findNSearchMatches(fileName string, readLineCount int16, search string) (string, error) {
+func findNSearchMatches(fileName string, readLineCount int16, search string, searchTimeMs int) (string, error) {
 	searchTerm := []byte(search)
 
 	f, err := os.Open(fileName)
@@ -143,7 +143,8 @@ func findNSearchMatches(fileName string, readLineCount int16, search string) (st
 		append(searchTerm, resetColor...)...,
 	)
 
-	predictedOffset := len(data) - TotalThroughput
+	totalThroughput := (BytesThroughputPerMs * searchTimeMs)
+	predictedOffset := len(data) - totalThroughput
 	offset := max(0, predictedOffset)
 	relevantData := data[offset:]
 
