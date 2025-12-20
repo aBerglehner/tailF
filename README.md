@@ -8,7 +8,7 @@
 -tail -n 500 file.txt | grep "search"
 ```
 
-![TailF Demo](assets/demo0.1.0.gif)
+![TailF Demo](assets/demo_0.2.0.gif)
 
 ## Argument options:
 
