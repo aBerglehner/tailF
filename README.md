@@ -28,6 +28,7 @@
 | Tool                          | Read Size | Time      | Throughput  |
 | ----------------------------- | --------- | --------- | ----------- |
 | tailF (big file)              | 60 MB     | ~50.29 ms | ~1192 MB/s  |
+| tailF (small file)            | 50 KB     | ~0.15 ms  | ~353 MB/s   |
 | GNU `tail -n 500_000 | grep`  | 60 MB     | ~64.91 ms | ~924 MB/s   |
 ```
 
