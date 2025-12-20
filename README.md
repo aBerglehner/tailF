@@ -10,16 +10,17 @@
 
 ### the search has 2 delimiters when it stops:
 
--n how many searches(lines) it will print -> default 500
--t specifies the approximate wait time, based on how fast the file can be read.
-Default: 50 ms, which corresponds to ~60 MB on my machine.
+#### -n how many searches(lines) it will print -> default 500
 
-### and of course if it read the whole file
+#### -t specifies the approximate wait time, based on how fast the file can be read. Default: 50 ms, which corresponds to ~60 MB on my machine.
+
+#### and of course if it read the whole file
 
 ### One current limitation
 
-If new lines keep arriving, you have a 5-second window to type and submit your search query. In most cases this is more than sufficient.
-(otherwise learn to type)
+#### If new lines keep arriving, you have a 5-second window to type and submit your search query. In most cases this is more than sufficient.
+
+#### (otherwise learn to type)
 
 ![TailF Demo](assets/demo_0.2.0.gif)
 
