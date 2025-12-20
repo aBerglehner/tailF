@@ -4,6 +4,10 @@
 
 ### The goal was to enable fast, interactive file watching and searching without restarting tail | grep for every search change.
 
+```bash
+-tail -n file.txt | grep "search"
+```
+
 ### the search has 2 delimiters when it stops:
 
 -n how many searches(lines) it will print -> default 500
@@ -12,9 +16,7 @@ Default: 50 ms, which corresponds to ~60 MB on my machine.
 
 ### and of course if it read the whole file
 
-```bash
--tail -n file.txt | grep "search"
-```
+### there is one downside for now: if newlines are coming in you have 5 sec to type and enter what you search for but mostly this more more than enough (otherwise learn to type)
 
 ![TailF Demo](assets/demo_0.2.0.gif)
 
