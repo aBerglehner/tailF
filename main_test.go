@@ -18,7 +18,7 @@ func BenchmarkDefault_GrepFlag_Newscrawl(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run("assets/testFiles/eng_newscrawl_2018_1M-sentences.txt", MaxReadLineCount, "suspicious", true)
+		run("assets/testFiles/eng_newscrawl_2018_1M-sentences.txt", MaxReadLineCount, "suspicious", false)
 	}
 
 	b.StopTimer()
@@ -49,7 +49,7 @@ func BenchmarkDefaultLines_GrepFlag(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, int16(DefaultLineCount), "th", true)
+		run(FileName, int16(DefaultLineCount), "th", false)
 	}
 
 	b.StopTimer()
@@ -75,7 +75,7 @@ func BenchmarkMaxLinesNoSearch_GrepFlag(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount, "", true)
+		run(FileName, MaxReadLineCount, "", false)
 	}
 
 	b.StopTimer()
@@ -101,7 +101,7 @@ func BenchmarkMaxLines_Highlight(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount, "th", false)
+		run(FileName, MaxReadLineCount, "th", true)
 	}
 
 	b.StopTimer()
@@ -127,7 +127,7 @@ func BenchmarkMaxLinesNoSearch_Highlight(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, MaxReadLineCount, "", false)
+		run(FileName, MaxReadLineCount, "", true)
 	}
 
 	b.StopTimer()
@@ -153,7 +153,7 @@ func BenchmarkDefaultLines_Highlight(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		run(FileName, int16(DefaultLineCount), "th", false)
+		run(FileName, int16(DefaultLineCount), "th", true)
 	}
 
 	b.StopTimer()
