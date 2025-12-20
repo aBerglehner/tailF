@@ -1,11 +1,19 @@
-## Interactive replacement for -> tail -f -n 500 file.txt | grep "search"
+## Interactive replacement for -> tail -f -n file.txt | grep "search"
 
 ### No dependencies! only the go standard library
 
 ### The goal was to enable fast, interactive file watching and searching without restarting tail | grep for every search change.
 
+### the search has 2 delimiters when it stops:
+
+-n how many searches(lines) it will print -> default 500
+-t specifies the approximate wait time, based on how fast the file can be read.
+Default: 50 ms, which corresponds to ~60 MB on my machine.
+
+### and of course if it read the whole file
+
 ```bash
--tail -n 500 file.txt | grep "search"
+-tail -n file.txt | grep "search"
 ```
 
 ![TailF Demo](assets/demo_0.2.0.gif)
