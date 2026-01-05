@@ -40,7 +40,7 @@ func main() {
 	}
 	fileName := os.Args[len(os.Args)-1]
 	searchTimeMs := flag.Int("t", DefaultSearchTimeMs, "max search time in ms only relevent in normal (grep) mode")
-	n := flag.Int("n", DefaultLineCount, "number of lines to search")
+	n := flag.Int("n", DefaultLineCount, "number of lines to print")
 	highlightOnly := flag.Bool("h", false, "print all lines and highlight search")
 	flag.Parse()
 
