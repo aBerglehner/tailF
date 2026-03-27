@@ -64,33 +64,37 @@ func main() {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	tailCh := make(chan string)
-	go tailF(f, fileName, tailCh)
+	changedCh := make(chan struct{})
+	go tailF(f, fileName, changedCh)
 
 	var currentSearch string
 	var mu sync.Mutex
 
 	for {
 		select {
-		case s := <-tailCh:
+		// if the file changed case
+		case <-changedCh:
 			mu.Lock()
 			search := currentSearch
 			mu.Unlock()
 
-			if !*highlightOnly && strings.Contains(s, search) {
-				fmt.Printf("%s",
-					strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
-			}
-			if *highlightOnly {
-				fmt.Printf("%s",
-					strings.ReplaceAll(s, search, string(highlightColor)+search+string(resetColor)))
-			}
+			// fmt.Printf("currentSearch: %v\n", search)
+			// fmt.Printf("readLineCount: %v\n", readLineCount)
+			// fmt.Printf("highlightOnly: %v\n", highlightOnly)
+			// fmt.Printf("searchTimeMs: %v\n", searchTimeMs)
+
+			fmt.Print("\033[H\033[2J")
+			str := run(fileName, readLineCount, search, *highlightOnly, *searchTimeMs)
+			fmt.Printf("%s", str)
+
+			// init start case
 		case searchTerm := <-initSearchCh:
 			mu.Lock()
 			currentSearch = searchTerm
 			mu.Unlock()
 			// \033[H  -> moves the cursor to top-left
 			// \033[2J -> clears the screen
+
 			fmt.Print("\033[H\033[2J")
 			str := run(fileName, readLineCount, searchTerm, *highlightOnly, *searchTimeMs)
 			fmt.Printf("%s", str)
@@ -350,20 +354,24 @@ func findOffset(data []byte, readLineCount int16) int {
 	return 0
 }
 
-func tailF(f *os.File, path string, tailCh chan<- string) {
+func tailF(f *os.File, path string, changedCh chan<- struct{}) {
 	offset, err := f.Seek(0, io.SeekEnd)
 	if err != nil {
 		log.Fatal(err)
 	}
 	reader := bufio.NewReader(f)
+
 	for {
+		start := time.Now()
 		// Try reading a line
 		line, err := reader.ReadString('\n')
 		if err == nil {
-			tailCh <- line
 			offset += int64(len(line))
 			continue
 		}
+
+		elapsed := time.Since(start)
+		fmt.Printf("Execution time: %s\n", elapsed)
 
 		// If nothing new: sleep and check again
 		// TODO: try with lock
@@ -376,7 +384,9 @@ func tailF(f *os.File, path string, tailCh chan<- string) {
 		}
 
 		// // If file was truncated (e.g., rotated), reset
-		if stat.Size() < offset {
+		if stat.Size() != offset {
+			// inform channel that something has changed
+			changedCh <- struct{}{}
 			f.Close()
 			f, _ = os.Open(path)
 			reader = bufio.NewReader(f)
