@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"runtime"
@@ -58,14 +57,8 @@ func main() {
 		}
 	}()
 
-	// PERF: might be able to give os.Open also to SearchLastNLines
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
 	changedCh := make(chan struct{})
-	go tailF(f, fileName, changedCh)
+	go tailF(fileName, changedCh)
 
 	var currentSearch string
 	var mu sync.Mutex
@@ -354,43 +347,28 @@ func findOffset(data []byte, readLineCount int16) int {
 	return 0
 }
 
-func tailF(f *os.File, path string, changedCh chan<- struct{}) {
-	offset, err := f.Seek(0, io.SeekEnd)
+func tailF(path string, changedCh chan<- struct{}) {
+	// TODO: might try with seek
+	currentStat, err := os.Stat(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	reader := bufio.NewReader(f)
 
 	for {
-		start := time.Now()
-		// Try reading a line
-		line, err := reader.ReadString('\n')
-		if err == nil {
-			offset += int64(len(line))
-			continue
-		}
-
-		elapsed := time.Since(start)
-		fmt.Printf("Execution time: %s\n", elapsed)
-
-		// If nothing new: sleep and check again
 		// TODO: try with lock
 		time.Sleep(5000 * time.Millisecond)
 
-		// Check if file grew
-		stat, err := os.Stat(path)
+		newStat, err := os.Stat(path)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// // If file was truncated (e.g., rotated), reset
-		if stat.Size() != offset {
+		// check if file changed
+		if newStat.Size() != currentStat.Size() {
 			// inform channel that something has changed
 			changedCh <- struct{}{}
-			f.Close()
-			f, _ = os.Open(path)
-			reader = bufio.NewReader(f)
-			offset = 0
+			// update currentStat to newStat
+			currentStat = newStat
 			continue
 		}
 	}
